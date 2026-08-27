@@ -1,0 +1,89 @@
+//
+// QTI bootctrl HIDL 1.2, vendored into the device tree so recovery does not
+// use AOSP libboot_control (misc-based slots). Qualcomm A/B lives in GPT.
+//
+
+cc_library_shared {
+    name: "android.hardware.boot@1.2-impl-qti",
+    stem: "android.hardware.boot@1.0-impl-1.2-qti",
+    defaults: ["hidl_defaults"],
+    relative_install_path: "hw",
+    vendor: true,
+    recovery_available: true,
+    srcs: [
+        "BootControl.cpp",
+        "libboot_control_qti/libboot_control_qti.cpp",
+    ],
+    local_include_dirs: [
+        "libboot_control_qti",
+    ],
+    header_libs: [
+        "libboot_control_qti_headers",
+    ],
+    shared_libs: [
+        "liblog",
+        "libhidlbase",
+        "libhardware",
+        "libutils",
+        "libbase",
+        "libcutils",
+        "libz",
+        "android.hardware.boot@1.0",
+        "android.hardware.boot@1.1",
+        "android.hardware.boot@1.2",
+    ],
+    static_libs: [
+        "libgptutils.xiaomi_taro",
+        "libboot_control",
+        "libbootloader_message_vendor",
+        "libfstab",
+    ],
+    cflags: [
+        "-Wall",
+        "-Werror",
+        "-Wno-unused-parameter",
+    ],
+}
+
+// TWRP 16 BootControlClient uses AIDL IBootControl when it is declared.
+// This recovery service wraps QTI GPT/UFS slot control instead of AOSP misc.
+cc_binary {
+    name: "android.hardware.boot-service.qti_recovery",
+    recovery: true,
+    relative_install_path: "hw",
+    srcs: [
+        "aidl/main.cpp",
+        "aidl/BootControl.cpp",
+        "libboot_control_qti/libboot_control_qti.cpp",
+    ],
+    local_include_dirs: [
+        "aidl",
+        "libboot_control_qti",
+    ],
+    header_libs: [
+        "libboot_control_qti_headers",
+    ],
+    shared_libs: [
+        "libbase",
+        "libbinder_ndk",
+        "libhidlbase",
+        "liblog",
+        "libcutils",
+        "libutils",
+        "libz",
+        "android.hardware.boot-V1-ndk",
+        "android.hardware.boot@1.1",
+        "android.hardware.boot@1.0",
+    ],
+    static_libs: [
+        "libgptutils.xiaomi_taro",
+        "libboot_control",
+        "libbootloader_message_vendor",
+        "libfstab",
+    ],
+    cflags: [
+        "-Wall",
+        "-Werror",
+        "-Wno-unused-parameter",
+    ],
+}

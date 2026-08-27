@@ -1,0 +1,12 @@
+<!--
+    Device-side IBootControl (AIDL). Must live under /vendor/etc/vintf, not
+    /system/etc/vintf/manifest: a type="device" fragment there makes libvintf
+    reject the entire framework manifest, hwservicemanager disables HIDL, and
+    keymaster/gatekeeper cannot register so FBE decrypt fails.
+-->
+<manifest version="9.0" type="device">
+    <hal format="aidl">
+        <name>android.hardware.boot</name>
+        <fqname>IBootControl/default</fqname>
+    </hal>
+</manifest>

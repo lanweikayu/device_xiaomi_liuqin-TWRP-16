@@ -1,0 +1,18 @@
+# ADB
+ro.adb.secure=0
+ro.boot.dynamic_partitions=true
+
+# Gatekeeper
+vendor.gatekeeper.disable_spu=true
+
+# Battery
+ro.charger.enable_suspend=1
+
+# Super size (measured)
+ro.dynamic.full_size=9126805504
+
+# FBE / keymaster / keymint
+keymaster_ver=4.1
+ro.crypto.volume.filenames_mode=aes-256-cts
+ro.crypto.metadata.enabled=true
+ro.hardware.keystore_desede=true

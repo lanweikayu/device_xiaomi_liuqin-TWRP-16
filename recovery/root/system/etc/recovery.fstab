@@ -1,0 +1,33 @@
+# Copyright (c) 2019-2020 The Linux Foundation. All rights reserved.
+#
+# Android fstab for recovery first-stage mount (liuqin, current A16 layout).
+
+#<src>                                                 <mnt_point>            <type>  <mnt_flags and options>                            <fs_mgr_flags>
+system                                                  /system                ext4    ro,barrier=1,discard                                 wait,slotselect,logical
+system                                                  /system                erofs   ro                                                   wait,slotselect,logical
+system_ext                                              /system_ext            ext4    ro,barrier=1,discard                                 wait,slotselect,logical
+system_ext                                              /system_ext            erofs   ro                                                   wait,slotselect,logical
+product                                                 /product               ext4    ro,barrier=1,discard                                 wait,slotselect,logical
+product                                                 /product               erofs   ro                                                   wait,slotselect,logical
+vendor                                                  /vendor                ext4    ro,barrier=1,discard                                 wait,slotselect,logical
+vendor                                                  /vendor                erofs   ro                                                   wait,slotselect,logical
+vendor_dlkm                                             /vendor_dlkm           ext4    ro,barrier=1,discard                                 wait,slotselect,logical
+vendor_dlkm                                             /vendor_dlkm           erofs   ro                                                   wait,slotselect,logical
+odm                                                     /odm                   ext4    ro,barrier=1,discard                                 wait,slotselect,logical
+odm                                                     /odm                   erofs   ro                                                   wait,slotselect,logical
+# Xiaomi HyperOS logical partition (absent on some AOSP-style ROMs).
+# Must be in recovery.fstab so TWRP calls Prepare_Super_Volume(); twrp.flags
+# alone only lists it and does not map /dev/block/mapper/mi_ext.
+mi_ext                                                  /mi_ext                ext4    ro,barrier=1,discard                                 wait,slotselect,logical
+mi_ext                                                  /mi_ext                erofs   ro                                                   wait,slotselect,logical
+/dev/block/by-name/metadata                             /metadata              ext4    noatime,nosuid,nodev,discard                         wait,check,formattable,first_stage_mount
+/dev/block/bootdevice/by-name/persist                   /persist               ext4    noatime,nosuid,nodev,barrier=1                       wait,check
+/dev/block/bootdevice/by-name/userdata                  /data                  f2fs    noatime,nosuid,nodev,discard,reserve_root=32768,resgid=1065,fsync_mode=nobarrier,inlinecrypt    latemount,wait,check,formattable,fileencryption=aes-256-xts:aes-256-cts:v2+inlinecrypt_optimized+wrappedkey_v0,keydirectory=/metadata/vold/metadata_encryption,metadata_encryption=aes-256-xts:wrappedkey_v0,quota,reservedsize=128M,sysfs_path=/sys/devices/platform/soc/1d84000.ufshc,checkpoint=fs
+/dev/block/bootdevice/by-name/boot                      /boot                  emmc    defaults                                             defaults
+/dev/block/bootdevice/by-name/misc                      /misc                  emmc    defaults                                             defaults
+/dev/block/bootdevice/by-name/rescue                    /cache                 ext4    nosuid,noatime,nodev,barrier=1                       wait
+/dev/block/bootdevice/by-name/modem                     /firmware              vfat    ro,shortname=lower,uid=1000,gid=1000,dmask=227,fmask=337,context=u:object_r:firmware_file:s0 wait,slotselect
+/dev/block/bootdevice/by-name/dsp                       /dsp                   ext4    ro,nosuid,nodev,barrier=1                            wait,slotselect
+# Qualcomm pKVM / HyperOS VM boot image (A/B GPT, not a super logical).
+/dev/block/bootdevice/by-name/vm-bootsys                /vm-system             ext4    ro,nosuid,nodev,barrier=1                            wait,slotselect
+/dev/block/bootdevice/by-name/bluetooth                 /bluetooth             vfat    ro,shortname=lower,uid=1002,gid=3002,dmask=227,fmask=337,context=u:object_r:bt_firmware_file:s0 wait,slotselect

@@ -1,0 +1,78 @@
+# Copyright (c) 2017-2023, The Linux Foundation. All rights reserved.
+
+on early-fs
+    # Firmware must be visible before nt36532 probe/Boot_Update_Firmware.
+    # Do not put kos under /lib/modules: that overlays vendor_boot and blacks
+    # `fastboot boot`.
+    write /proc/sys/kernel/firmware_config/force_sysfs_fallback 1
+    write /sys/module/firmware_class/parameters/path /lib/firmware
+    exec u:r:recovery:s0 -- /system/bin/sh /system/bin/load_early_modules.sh
+    write /proc/sys/walt/sched_lib_name "recovery,magiskboot,Updater,updater,update_engine_sideload"
+    write /proc/sys/walt/sched_lib_mask_force 255
+
+on fs
+    export LD_LIBRARY_PATH /system/lib64:/vendor/lib64:/vendor/lib64/hw
+    wait /dev/block/platform/soc/${ro.boot.bootdevice} 10
+    symlink /dev/block/platform/soc/${ro.boot.bootdevice} /dev/block/bootdevice
+    write /proc/sys/kernel/firmware_config/force_sysfs_fallback 1
+    write /sys/module/firmware_class/parameters/path /lib/firmware
+    chmod 0660 /dev/qseecom
+    chown system drmrpc /dev/qseecom
+    chmod 0664 /dev/ion
+    chown system system /dev/ion
+    chmod 0666 /dev/input/*
+    mkdir /mnt/vendor 0775 shell system
+    mkdir /mnt/vendor/persist 0775 shell system
+    mkdir /data/vendor 0771 system system
+    mkdir /data/vendor/tzstorage 0770 system system
+    install_keyring
+    # Pin TEE version-binding to BoardConfig (2099) before KeyMint configure().
+    # Do not let ColorOS / Xiaomi build.prop pull the patch dates back down.
+    exec u:r:recovery:s0 -- /system/bin/resetprop persist.twrp.rotation 90
+    exec u:r:recovery:s0 -- /system/bin/resetprop ro.build.version.security_patch 2099-12-31
+    exec u:r:recovery:s0 -- /system/bin/resetprop ro.vendor.build.security_patch 2099-12-31
+    exec u:r:recovery:s0 -- /system/bin/resetprop ro.boot.boot_security_patch 2099-12-31
+    # Real persist for QSEE, but only one mount of the block device.
+    # /persist is a real directory (BOARD_ROOT_EXTRA_FOLDERS), so do not symlink over it.
+    exec u:r:recovery:s0 -- /system/bin/sh /system/bin/bind_persist.sh
+    # Start QSEE before TWRP decrypts; missing this race leaves data encrypted.
+    start vendor.qseecomd
+    start qseecom-service
+    chmod 0666 /dev/ufs-bsg
+    chmod 0666 /dev/ufs-bsg0
+    # Relabel UFS LUN disks + ufs-bsg so the enforcing boot HAL can use them.
+    exec u:r:recovery:s0 -- /system/bin/sh /system/bin/label_bootctrl.sh
+    # AIDL boot HAL (QTI GPT). After bootdevice symlink, ufs-bsg, and labels.
+    start vendor.boot-default
+
+on init
+    chmod 0666 /dev/input/*
+
+on property:hwservicemanager.ready=true
+    start vendor.boot-default
+
+on boot
+    setprop sys.usb.config adb
+    start health-hal-2-1
+    chmod 0666 /dev/input/*
+    chmod 0666 /sys/class/touch/touch_dev
+    chmod 0666 /sys/class/backlight/panel0-backlight/brightness
+
+on property:twrp.modules.loaded=true
+    mkdir /firmware
+    mount vfat /dev/block/bootdevice/by-name/modem${ro.boot.slot_suffix} /firmware ro
+    mkdir /vendor/firmware_mnt 0771 system system
+    mount none /firmware /vendor/firmware_mnt bind rec
+    wait /sys/kernel/boot_adsp/boot
+    write /sys/kernel/boot_adsp/boot 1
+    wait /sys/class/power_supply/battery
+    start vendor.qseecomd
+    start qseecom-service
+    start health-hal-2-1
+    chmod 0666 /dev/input/*
+    chmod 0666 /sys/class/touch/touch_dev
+
+on property:vendor.sys.listeners.registered=true
+    start gatekeeper-1-0
+    start vendor.keymaster-4-1
+    start vendor.keymint-qti

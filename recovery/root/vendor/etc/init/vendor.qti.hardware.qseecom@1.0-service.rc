@@ -1,0 +1,8 @@
+# Started from init.recovery.qcom.rc after qseecomd.
+
+service qseecom-service /vendor/bin/hw/vendor.qti.hardware.qseecom@1.0-service
+    class hal
+    user root
+    group root drmrpc
+    disabled
+    seclabel u:r:recovery:s0

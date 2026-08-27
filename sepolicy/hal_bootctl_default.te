@@ -1,0 +1,39 @@
+# QTI GPT/UFS boot HAL extras. recovery_only so the running OS vendor
+# policy is unchanged. AOSP neverallow blocks this domain from open/rw on
+# generic block_device/device nodes, so recovery init relabels the UFS LUN
+# disks and ufs-bsg nodes to these types before starting the HAL.
+recovery_only(`
+    type ufs_bsg_device, dev_type;
+    type ufs_lun_block_device, dev_type;
+
+    # by-name readdir (AOSP only grants search)
+    allow hal_bootctl_default block_device:dir r_dir_perms;
+    allow hal_bootctl_default block_device:lnk_file r_file_perms;
+    allow hal_bootctl_default block_device:blk_file getattr;
+
+    # Whole UFS LUNs after chcon (GPT read/write)
+    allow hal_bootctl_default ufs_lun_block_device:blk_file rw_file_perms;
+
+    # /dev/ufs-bsg* after chcon (BOOT_LU_EN)
+    allow hal_bootctl_default ufs_bsg_device:chr_file rw_file_perms;
+    allowxperm hal_bootctl_default ufs_bsg_device:chr_file ioctl { 0x2285 };
+
+    # opendir /dev to find ufs-bsg; follow the /dev/block/bootdevice symlink
+    allow hal_bootctl_default tmpfs:dir r_dir_perms;
+    allow hal_bootctl_default tmpfs:lnk_file r_file_perms;
+    allow hal_bootctl_default device:dir r_dir_perms;
+    allow hal_bootctl_default device:lnk_file r_file_perms;
+
+    # fstab / virt A/B misc helpers
+    allow hal_bootctl_default sysfs_dt_firmware_android:dir r_dir_perms;
+    allow hal_bootctl_default rootfs:dir r_dir_perms;
+    allow hal_bootctl_default rootfs:file { r_file_perms execute map };
+
+    allow hal_bootctl_default self:global_capability_class_set sys_rawio;
+
+    # recovery init relabels nodes for the HAL
+    allow recovery device:chr_file { getattr relabelfrom };
+    allow recovery ufs_bsg_device:chr_file { getattr relabelto };
+    allow recovery block_device:blk_file { getattr relabelfrom };
+    allow recovery ufs_lun_block_device:blk_file { getattr relabelto };
+')
