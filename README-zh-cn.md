@@ -105,6 +105,15 @@ out/target/product/liuqin/recovery.img
 - [X] 备份和恢复
 - [X] 镜像刷入
 
+## Bug 修复
+
+- 现在可以正常解压 ZIP64 归档中单个大于 4 GB 的条目（`unzip -p`）。原版
+  `unzip`（`system/libziparchive` 提供的 ziptool）会先把整个未压缩条目分配
+  到内存再写回 stdout，内存不足时触发 `bad_alloc`/OOM，导致输出截断。设备树
+  通过 `BOARD_RECOVERY_IMAGE_PREPARE` 安装了基于 `7za` 的 `unzip` 包装脚本，
+  以流式方式解压 ZIP64 条目，`unzip -p package.zip images/super.img.zst`
+  可以输出完整内容且退出码可靠。
+
 ## 已知约束
 - 进入 TWRP 界面需要当前槽位的 `boot` + `vendor_boot` + `recovery``dtbo`
 - 解密 `/data` 还需要 `persist`（QSEE 密钥）和 `metadata`

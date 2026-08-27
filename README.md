@@ -106,6 +106,17 @@ Verified on device:
 - [X] Backup and restore
 - [X] Image flashing
 
+### Bug fixes
+
+- Unzip of single ZIP64 entries larger than 4 GB (`unzip -p`) now works. The
+  stock `unzip` (ziptool from `system/libziparchive`) allocates the entire
+  uncompressed entry in RAM before writing it to stdout, which fails with
+  `bad_alloc`/OOM and truncates entries above the available memory. The device
+  tree now installs a `7za`-based `unzip` wrapper (via
+  `BOARD_RECOVERY_IMAGE_PREPARE`) that streams ZIP64 entries, so
+  `unzip -p package.zip images/super.img.zst` produces complete output with a
+  reliable exit code.
+
 ## Known constraints
 
 - The TWRP UI needs the current slot's `boot` + `vendor_boot` + `recovery` + `dtbo`

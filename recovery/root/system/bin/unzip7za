@@ -1,0 +1,146 @@
+#!/system/bin/sh
+#
+# unzip front-end backed by 7za for liuqin TWRP.
+#
+# The stock unzip binary (ziptool, from system/libziparchive) implements
+# unzip -p by allocating the ENTIRE uncompressed entry into memory and only
+# then writing it to stdout.  For any ZIP64 entry larger than the available
+# RAM (e.g. a single images/super.img.zst >4GB) this either aborts with
+# std::bad_alloc or gets OOM-killed, so the piped output is truncated.
+#
+# 7za (7-Zip) fully supports ZIP64 (64-bit compressed size, local header
+# offsets and central directory) and streams the output, so it handles
+# single >4GB entries with a constant small memory footprint.
+#
+# This script is installed as /system/bin/unzip via BOARD_RECOVERY_IMAGE_PREPARE
+# in BoardConfig.mk (ziptool only symlinks unzip to ziptool).
+#
+# NOTE: variable names must start with a letter (POSIX); a leading digit such
+# as 7ZA is invalid and mksh will misparse it.
+
+SEVENZA=/system/bin/7za
+[ -x "$SEVENZA" ] || SEVENZA=7za
+
+# unzip option state
+pipe=0
+junk=0
+overwrite=0
+never=0
+quiet=0
+list=0
+test=0
+dir=""
+
+# collect files (after archive name) separately; archive is first positional
+archive=""
+files=""
+next_is_dir=0
+
+for arg in "$@"; do
+    if [ "$next_is_dir" = "1" ]; then
+        dir="$arg"
+        next_is_dir=0
+        continue
+    fi
+    case "$arg" in
+        -p) pipe=1 ;;
+        -j) junk=1 ;;
+        -o) overwrite=1 ;;
+        -n) never=1 ;;
+        -q) quiet=1 ;;
+        -l) list=1 ;;
+        -v) list=1 ;;
+        -t) test=1 ;;
+        -d) next_is_dir=1 ;;
+        -Z) list=1 ;;
+        -*)
+            # tolerate combined short options like -pqo
+            case "$arg" in
+                *p*) pipe=1 ;;
+            esac
+            case "$arg" in
+                *j*) junk=1 ;;
+            esac
+            case "$arg" in
+                *o*) overwrite=1 ;;
+            esac
+            case "$arg" in
+                *n*) never=1 ;;
+            esac
+            case "$arg" in
+                *q*) quiet=1 ;;
+            esac
+            case "$arg" in
+                *l*) list=1 ;;
+            esac
+            case "$arg" in
+                *t*) test=1 ;;
+            esac
+            case "$arg" in
+                *-d*)
+                    # -dDIR style not handled by unzip, but be lenient
+                    ;;
+            esac
+            ;;
+        *)
+            if [ -z "$archive" ]; then
+                archive="$arg"
+            else
+                files="$files $arg"
+            fi
+            ;;
+    esac
+done
+
+[ -n "$archive" ] || { echo "unzip: missing archive filename" >&2; exit 1; }
+
+if [ "$list" = "1" ]; then
+    exec "$SEVENZA" l "$archive"
+fi
+
+if [ "$test" = "1" ]; then
+    exec "$SEVENZA" t "$archive" $files
+fi
+
+# For -p: 7za returns 0 even if the requested entry does not exist, which would
+# hide the error.  Check existence up-front and translate to a non-zero exit
+# so scripts relying on unzip -p exit codes keep working.
+if [ "$pipe" = "1" ]; then
+    if [ -n "$files" ]; then
+        missing=0
+        for f in $files; do
+            count=$("$SEVENZA" l -ba "$archive" "$f" 2>/dev/null | wc -l)
+            if [ "$count" -eq 0 ]; then
+                echo "unzip: cannot find $f in $archive" >&2
+                missing=1
+            fi
+        done
+        [ "$missing" = "0" ] || exit 2
+    fi
+    # Stream entry contents to stdout.  -so routes file data to stdout;
+    # diagnostics go to stderr.  Progress noise is suppressed for cleanliness.
+    exec "$SEVENZA" e -so -bsp0 -bso0 "$archive" $files
+fi
+
+# Plain extraction.
+yopt=""
+if [ "$overwrite" = "1" ]; then
+    yopt="-y"
+elif [ "$never" = "1" ]; then
+    yopt="-aos"
+fi
+
+if [ -n "$dir" ]; then
+    mkdir -p "$dir"
+    if [ "$junk" = "1" ]; then
+        exec "$SEVENZA" e -y -o"$dir" "$archive" $files
+    else
+        exec "$SEVENZA" x -y -o"$dir" "$archive" $files
+    fi
+else
+    if [ "$junk" = "1" ]; then
+        exec "$SEVENZA" e $yopt "$archive" $files
+    else
+        exec "$SEVENZA" x $yopt "$archive" $files
+    fi
+fi

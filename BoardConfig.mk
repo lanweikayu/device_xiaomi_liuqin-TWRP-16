@@ -135,6 +135,9 @@ TW_KEEP_SYSTEM_SECURITY_PATCH := true
 TW_INCLUDE_REPACKTOOLS := true
 TW_INCLUDE_RESETPROP := true
 TW_INCLUDE_LIBRESETPROP := true
+# Needed by unzip7za: stock ziptool unzip -p loads the whole ZIP64 entry into
+# RAM, so a single images/super.img.zst >4GB is truncated (bad_alloc/OOM).
+TW_INCLUDE_7ZA := true
 TW_EXCLUDE_LPDUMP := true
 TW_INCLUDE_LPTOOLS := true
 TW_EXCLUDE_TZDATA := true
@@ -208,3 +211,8 @@ define liuqin-replace-aidl-boot-hal
 	sh $(DEVICE_PATH)/prebuilt/replace_boot_hal.sh $(TARGET_RECOVERY_ROOT_OUT) $(USE_PORTRAIT)
 endef
 BOARD_RECOVERY_IMAGE_PREPARE += $(call liuqin-replace-aidl-boot-hal)
+
+# ZIP64 unzip wrapper: staged as recovery/root/system/bin/unzip7za and installed
+# over ziptool's unzip symlink at the end of replace_boot_hal.sh (last device-tree
+# pack step). A second BOARD_RECOVERY_IMAGE_PREPARE += here gets concatenated
+# with kernel.mk's `$(call twrp-depmod)` and `chmod` swallows the depmod `@echo`.

@@ -95,3 +95,20 @@ if [ -d "$ROOT/vendor/bin/hw" ]; then
         chmod 0755 "$ROOT/system/bin/hw/$(basename "$bin")"
     done
 fi
+
+# Stock unzip is ziptool; unzip -p allocates the whole uncompressed ZIP64 entry.
+# Install the 7za wrapper last so the ramdisk copy of recovery/root cannot
+# clobber it via the unzip symlink (same as TB522FU BOARD_RECOVERY_IMAGE_PREPARE).
+UNZIP7ZA="$ROOT/system/bin/unzip7za"
+if [ ! -f "$UNZIP7ZA" ]; then
+    echo "liuqin: missing unzip7za wrapper at $UNZIP7ZA" >&2
+    exit 1
+fi
+if [ ! -f "$ROOT/system/bin/7za" ]; then
+    echo "liuqin: missing 7za (TW_INCLUDE_7ZA)" >&2
+    exit 1
+fi
+rm -f "$ROOT/system/bin/unzip"
+cp -f "$UNZIP7ZA" "$ROOT/system/bin/unzip"
+chmod 0755 "$ROOT/system/bin/unzip" "$ROOT/system/bin/7za"
+echo "liuqin: installed 7za unzip wrapper"
