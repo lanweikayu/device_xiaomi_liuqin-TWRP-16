@@ -205,6 +205,6 @@ BOARD_SEPOLICY_DIRS += $(DEVICE_PATH)/sepolicy
 # TWRP 16 prefers AIDL IBootControl. Replace AOSP misc-based default_recovery
 # with the QTI GPT/UFS implementation after all modules are installed.
 define liuqin-replace-aidl-boot-hal
-	sh $(DEVICE_PATH)/prebuilt/replace_boot_hal.sh $(TARGET_RECOVERY_ROOT_OUT)
+	sh $(DEVICE_PATH)/prebuilt/replace_boot_hal.sh $(TARGET_RECOVERY_ROOT_OUT) $(USE_PORTRAIT)
 endef
 BOARD_RECOVERY_IMAGE_PREPARE += $(call liuqin-replace-aidl-boot-hal)

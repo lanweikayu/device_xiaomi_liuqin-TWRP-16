@@ -3,6 +3,7 @@
 # installed and immediately before the ramdisk is packed.
 set -e
 ROOT="$1"
+USE_PORTRAIT="${2:-}"
 QTI_BOOT="$ROOT/system/bin/hw/android.hardware.boot-service.qti_recovery"
 DEF_BOOT="$ROOT/system/bin/hw/android.hardware.boot-service.default_recovery"
 if [ ! -f "$QTI_BOOT" ]; then
@@ -66,6 +67,18 @@ service vendor.boot-default /system/bin/hw/android.hardware.boot-service.default
 EOF
 echo "liuqin: installed enforcing boot HAL rc"
 chmod 0755 "$ROOT/system/bin/label_bootctrl.sh" 2>/dev/null || true
+
+# graphics.cpp prefers persist.twrp.rotation over compiled TW_ROTATION.
+# Landscape forces 90; portrait must be 0 or the portrait theme still draws sideways.
+ROTATION=90
+if [ "$USE_PORTRAIT" = "true" ]; then
+    ROTATION=0
+fi
+INIT_RC="$ROOT/init.recovery.qcom.rc"
+if [ -f "$INIT_RC" ]; then
+    sed -i "s/resetprop persist.twrp.rotation [0-9]*/resetprop persist.twrp.rotation $ROTATION/" "$INIT_RC"
+    echo "liuqin: persist.twrp.rotation $ROTATION"
+fi
 
 # Crypto HALs must run from ramdisk /system/bin, not super vendor (pins vendor_a).
 mkdir -p "$ROOT/system/bin/hw"
