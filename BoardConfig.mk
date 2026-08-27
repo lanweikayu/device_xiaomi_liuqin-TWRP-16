@@ -138,6 +138,14 @@ TW_INCLUDE_LIBRESETPROP := true
 TW_EXCLUDE_LPDUMP := true
 TW_INCLUDE_LPTOOLS := true
 TW_EXCLUDE_TZDATA := true
+# Metadata FBE keeps /dev/block/mapper/userdata on top of userdata. Format Data
+# mkfs.f2fs then fails with "In use by the system!" unless that dm node is
+# deleted first. TW_USE_DMCTL makes TWRP run `dmctl delete userdata` and ships
+# dmctl in the ramdisk. Do not confuse with super Unmap_Super_Devices().
+TW_USE_DMCTL := true
+# Do not parse ROM vendor fstab (would require mounting super vendor).
+TW_SKIP_ADDITIONAL_FSTAB := true
+TW_FORCE_KEYMASTER_VER := true
 
 # TWRP UI / device
 # Panel is portrait-native 1800x2880. Landscape TWRP rotates the UI 90° so

@@ -13,14 +13,17 @@
 /system_ext            erofs   /dev/block/mapper/system_ext                                       flags=display="System Ext";logical;slotselect
 /product               ext4    /dev/block/mapper/product                                          flags=display="Product";logical;slotselect
 /product               erofs   /dev/block/mapper/product                                          flags=display="Product";logical;slotselect
-/vendor                ext4    /dev/block/mapper/vendor                                           flags=display="Vendor";logical;slotselect
-/vendor                erofs   /dev/block/mapper/vendor                                           flags=display="Vendor";logical;slotselect
+# Do not list /vendor as a logical mount. See recovery.fstab: overlaying super
+# vendor onto ramdisk /vendor pins vendor_a and Format Data cannot unmap it.
 /vendor_dlkm           ext4    /dev/block/mapper/vendor_dlkm                                      flags=display="Vendor DLKM";logical;slotselect
 /vendor_dlkm           erofs   /dev/block/mapper/vendor_dlkm                                      flags=display="Vendor DLKM";logical;slotselect
 /odm                   ext4    /dev/block/mapper/odm                                              flags=display="ODM";logical;slotselect
 /odm                   erofs   /dev/block/mapper/odm                                              flags=display="ODM";logical;slotselect
-/mi_ext                ext4    /dev/block/mapper/mi_ext                                           flags=display="Mi Ext";logical;slotselect
-/mi_ext                erofs   /dev/block/mapper/mi_ext                                           flags=display="Mi Ext";logical;slotselect
+# Do not list mi_ext here. recovery.fstab already maps it via Prepare_Super_Volume()
+# when the logical exists (HyperOS). If mapping fails (AOSP-style super without
+# mi_ext), a flags entry with logical is still added as Is_Super. Format Data
+# then DestroyLogicalPartition(mi_ext_<slot>) fails after already removing
+# /system_root from the partition list ("Unable to unmap dynamic partitions").
 
 # Flashable images
 # Do not add /super here: TWRP already creates "Super (system …)" from

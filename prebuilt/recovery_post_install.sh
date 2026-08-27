@@ -90,6 +90,23 @@ if [ -d "$SYS_VINTF" ]; then
     done
 fi
 
+# Crypto HALs must not exec from super /vendor: that pins vendor_a and Format
+# Data cannot unmap it. Relink already drops them under ramdisk /vendor/bin;
+# copy to /system/bin so init can start them even if something later mounts
+# the vendor logical over /vendor.
+mkdir -p "$ROOT/system/bin/hw"
+if [ -f "$ROOT/vendor/bin/qseecomd" ]; then
+    cp -f "$ROOT/vendor/bin/qseecomd" "$ROOT/system/bin/qseecomd"
+    chmod 0755 "$ROOT/system/bin/qseecomd"
+fi
+if [ -d "$ROOT/vendor/bin/hw" ]; then
+    for bin in "$ROOT/vendor/bin/hw"/*; do
+        [ -f "$bin" ] || continue
+        cp -f "$bin" "$ROOT/system/bin/hw/"
+        chmod 0755 "$ROOT/system/bin/hw/$(basename "$bin")"
+    done
+fi
+
 # Official extra-languages CJK fonts (recovery.img has no kernel, 100MiB is enough).
 mkdir -p "$ROOT/twres/fonts"
 if [ -f "$TWRP_FONT" ]; then

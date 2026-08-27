@@ -66,3 +66,19 @@ service vendor.boot-default /system/bin/hw/android.hardware.boot-service.default
 EOF
 echo "liuqin: installed enforcing boot HAL rc"
 chmod 0755 "$ROOT/system/bin/label_bootctrl.sh" 2>/dev/null || true
+
+# Crypto HALs must run from ramdisk /system/bin, not super vendor (pins vendor_a).
+mkdir -p "$ROOT/system/bin/hw"
+if [ -f "$ROOT/vendor/bin/qseecomd" ]; then
+    echo "liuqin: copying qseecomd to /system/bin"
+    cp -f "$ROOT/vendor/bin/qseecomd" "$ROOT/system/bin/qseecomd"
+    chmod 0755 "$ROOT/system/bin/qseecomd"
+fi
+if [ -d "$ROOT/vendor/bin/hw" ]; then
+    for bin in "$ROOT/vendor/bin/hw"/*; do
+        [ -f "$bin" ] || continue
+        echo "liuqin: copying $(basename "$bin") to /system/bin/hw"
+        cp -f "$bin" "$ROOT/system/bin/hw/"
+        chmod 0755 "$ROOT/system/bin/hw/$(basename "$bin")"
+    done
+fi

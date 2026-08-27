@@ -9,15 +9,20 @@ system_ext                                              /system_ext            e
 system_ext                                              /system_ext            erofs   ro                                                   wait,slotselect,logical
 product                                                 /product               ext4    ro,barrier=1,discard                                 wait,slotselect,logical
 product                                                 /product               erofs   ro                                                   wait,slotselect,logical
-vendor                                                  /vendor                ext4    ro,barrier=1,discard                                 wait,slotselect,logical
-vendor                                                  /vendor                erofs   ro                                                   wait,slotselect,logical
+# Do not list vendor here. TWRP mounts /vendor from super during fstab/module
+# setup; KeyMint/Keymaster then exec from that erofs. Format Data's
+# Unmap_Super_Devices() cannot DM_DEV_REMOVE vendor_a (EBUSY) and fails with
+# "Unable to unmap dynamic partitions". Crypto HALs already live in the
+# ramdisk under /vendor/bin; keep that copy and do not overlay it.
 vendor_dlkm                                             /vendor_dlkm           ext4    ro,barrier=1,discard                                 wait,slotselect,logical
 vendor_dlkm                                             /vendor_dlkm           erofs   ro                                                   wait,slotselect,logical
 odm                                                     /odm                   ext4    ro,barrier=1,discard                                 wait,slotselect,logical
 odm                                                     /odm                   erofs   ro                                                   wait,slotselect,logical
-# Xiaomi HyperOS logical partition (absent on some AOSP-style ROMs).
-# Must be in recovery.fstab so TWRP calls Prepare_Super_Volume(); twrp.flags
-# alone only lists it and does not map /dev/block/mapper/mi_ext.
+# Xiaomi HyperOS logical partition (absent on AOSP-style super, including this A16 image).
+# Keep it here so HyperOS still maps /dev/block/mapper/mi_ext via Prepare_Super_Volume().
+# Do not also list it in twrp.flags: a leftover Is_Super entry for a missing
+# mi_ext_<slot> makes Format Data fail in Unmap_Super_Devices() and drops
+# /system_root from the partition list (backup/restore then cannot find it).
 mi_ext                                                  /mi_ext                ext4    ro,barrier=1,discard                                 wait,slotselect,logical
 mi_ext                                                  /mi_ext                erofs   ro                                                   wait,slotselect,logical
 /dev/block/by-name/metadata                             /metadata              ext4    noatime,nosuid,nodev,discard                         wait,check,formattable,first_stage_mount
