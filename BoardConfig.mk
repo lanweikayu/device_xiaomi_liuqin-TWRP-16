@@ -185,7 +185,13 @@ endif
 TW_NO_SCREEN_BLANK := true
 TW_EXCLUDE_APEX := true
 TW_HAS_EDL_MODE := false
-TW_CUSTOM_CPU_TEMP_PATH := "/sys/class/thermal/thermal_zone27/temp"
+# Health HAL in recovery starts before ADSP/pmic_glink SoC is real, and
+# GetBatteryInfo() forges 100% if IHealth is missing. Read sysfs directly.
+TW_USE_LEGACY_BATTERY_SERVICES := true
+TW_CUSTOM_BATTERY_PATH := "/sys/class/power_supply/battery"
+# Do not use thermal_zone27 (cpuss-2, ~54C SoC). Android battery/skin is
+# ~35C (type=battery). setup_twrp_sensors.sh binds that node by type.
+TW_CUSTOM_CPU_TEMP_PATH := "/dev/twrp_cpu_temp"
 TW_BACKUP_EXCLUSIONS := /data/fonts,/data/adb/ap,/data/adb/ksu
 TW_STATUS_ICONS_ALIGN := center
 TW_USE_SERIALNO_PROPERTY_FOR_DEVICE_ID := true

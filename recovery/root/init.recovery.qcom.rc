@@ -6,7 +6,10 @@ on early-fs
     # `fastboot boot`.
     write /proc/sys/kernel/firmware_config/force_sysfs_fallback 1
     write /sys/module/firmware_class/parameters/path /lib/firmware
+    # Bind CPU temp to a board NTC before modules; refresh after charger insmod.
+    exec u:r:recovery:s0 -- /system/bin/sh /system/bin/setup_twrp_sensors.sh
     exec u:r:recovery:s0 -- /system/bin/sh /system/bin/load_early_modules.sh
+    exec u:r:recovery:s0 -- /system/bin/sh /system/bin/setup_twrp_sensors.sh
     write /proc/sys/walt/sched_lib_name "recovery,magiskboot,Updater,updater,update_engine_sideload"
     write /proc/sys/walt/sched_lib_mask_force 255
 
@@ -57,6 +60,7 @@ on boot
     chmod 0666 /dev/input/*
     chmod 0666 /sys/class/touch/touch_dev
     chmod 0666 /sys/class/backlight/panel0-backlight/brightness
+    exec u:r:recovery:s0 -- /system/bin/sh /system/bin/setup_twrp_sensors.sh
 
 on property:twrp.modules.loaded=true
     mkdir /firmware
@@ -69,6 +73,7 @@ on property:twrp.modules.loaded=true
     start vendor.qseecomd
     start qseecom-service
     start health-hal-2-1
+    exec u:r:recovery:s0 -- /system/bin/sh /system/bin/setup_twrp_sensors.sh
     chmod 0666 /dev/input/*
     chmod 0666 /sys/class/touch/touch_dev
 

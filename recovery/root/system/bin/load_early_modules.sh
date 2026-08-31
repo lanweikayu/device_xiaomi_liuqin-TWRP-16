@@ -98,4 +98,6 @@ ins q6_notifier_dlkm.ko
 ins gpr_dlkm.ko
 ins spf_core_dlkm.ko
 ins adsp_loader_dlkm.ko
+# Battery sysfs exists after qti_battery_charger; bind TWRP temp before recovery starts.
+[ -f /system/bin/setup_twrp_sensors.sh ] && /system/bin/sh /system/bin/setup_twrp_sensors.sh || true
 exit 0
