@@ -24,14 +24,15 @@ bad() { echo "  FAIL: $1"; FAIL=$((FAIL+1)); }
 
 # mkroot <case-dir> [withdef]
 # Materialises what the real build leaves in $TARGET_RECOVERY_ROOT_OUT at
-# BOARD_RECOVERY_IMAGE_PREPARE time, at the real depth
-# (<case>/out/target/product/liuqin/recovery) so the hook's
-# $ROOT/../../system lookups resolve inside the case dir.
+# BOARD_RECOVERY_IMAGE_PREPARE time. TARGET_RECOVERY_ROOT_OUT is
+# <product>/recovery/root (CI log: ".../liuqin/recovery/root/system/bin/hw/..."),
+# and the hook reaches the system image via $ROOT/../../system, i.e.
+# <product>/system -- so mirror exactly that depth and directory layout.
 # Sets: R (recovery root), OUT (product dir), LOG (case log)
 mkroot() {
     CASE="$1"
-    R="$CASE/out/target/product/liuqin/recovery"
     OUT="$CASE/out/target/product/liuqin"
+    R="$OUT/recovery/root"
     LOG="$CASE/hook.log"
     BOOT_RC="$R/system/etc/init/android.hardware.boot-service.default_recovery.rc"
     rm -rf "$CASE"
