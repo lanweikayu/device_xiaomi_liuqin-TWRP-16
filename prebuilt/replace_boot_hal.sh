@@ -11,8 +11,20 @@ if [ ! -f "$QTI_BOOT" ]; then
     exit 1
 fi
 if [ ! -f "$DEF_BOOT" ]; then
-    echo "liuqin: missing default AIDL boot HAL at $DEF_BOOT" >&2
-    exit 1
+    # AOSP's misc-based default_recovery is only a LOCAL_REQUIRED_MODULES of
+    # recovery_prebuilt (Make), while the install into the recovery image is
+    # driven by PRODUCT_PACKAGES (Soong): it is built but not installed, so its
+    # binary is legitimately absent here. It is also the implementation we
+    # *replace* below, so materialise the path TWRP's rc expects instead of
+    # failing the build.
+    echo "liuqin: AOSP default_recovery not installed; creating it from the QTI service"
+    mkdir -p "$(dirname "$DEF_BOOT")"
+fi
+# AOSP's unprefixed rc would race to register
+# android.hardware.boot.IBootControl/default next to our QTI-backed service.
+if [ -f "$ROOT/system/etc/init/android.hardware.boot-service.default.rc" ]; then
+    echo "liuqin: dropping AOSP unprefixed boot HAL rc (would race IBootControl/default)"
+    rm -f "$ROOT/system/etc/init/android.hardware.boot-service.default.rc"
 fi
 echo "liuqin: installing QTI GPT boot HAL as default_recovery"
 cp -f "$QTI_BOOT" "$DEF_BOOT"
